@@ -1,0 +1,840 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>淘宝推品作战地图 v1.0 · 从链接到盈利的完整作战图</title>
+<style>
+:root{
+  --bg:#f6f7fb; --card:#fff; --fg:#141b2d; --muted:#5f6b85; --line:#e3e7f0;
+  --p0:#6366f1; --p1:#0ea5e9; --p2:#f59e0b; --p3:#ef4444; --p4:#10b981; --p5:#8b5cf6; --p6:#475569;
+  --ok:#059669; --warn:#d97706; --bad:#dc2626;
+  --shadow:0 1px 2px rgba(16,24,40,.06),0 8px 24px rgba(16,24,40,.06);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--fg);font:14px/1.6 "Microsoft YaHei","PingFang SC","Hiragino Sans GB",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+.wrap{max-width:1560px;margin:0 auto;padding:20px 20px 60px}
+
+/* ---------- header ---------- */
+.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:14px}
+h1{font-size:26px;margin:0;letter-spacing:.5px}
+h1 .tag{font-size:12px;font-weight:600;color:#fff;background:linear-gradient(135deg,#f97316,#ef4444);border-radius:999px;padding:2px 10px;vertical-align:middle;margin-left:8px}
+.sub{color:var(--muted);font-size:13px;margin-top:6px}
+.tools{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:#fff;color:var(--fg);border-radius:8px;padding:7px 12px;font-size:13px;cursor:pointer;box-shadow:0 1px 1px rgba(0,0,0,.02)}
+.btn:hover{border-color:#c7cfe3;background:#fbfcff}
+.btn.primary{background:#141b2d;color:#fff;border-color:#141b2d}
+.btn.primary:hover{background:#243049}
+
+/* ---------- gate strip ---------- */
+.gates{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin:14px 0 16px}
+.gate{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.gate:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c)}
+.gate .g{font-size:11px;font-weight:700;color:var(--c);letter-spacing:.5px}
+.gate .n{font-size:13px;font-weight:700;margin:1px 0 3px}
+.gate .d{font-size:11px;color:var(--muted)}
+@media(max-width:1400px){.gates{grid-template-columns:repeat(4,1fr)}}
+@media(max-width:820px){.gates{grid-template-columns:repeat(2,1fr)}}
+
+/* ---------- map ---------- */
+.main{display:flex;gap:14px;align-items:stretch}
+.pane{position:relative;flex:1;min-width:0;height:calc(100vh - 210px);min-height:560px;background:
+  radial-gradient(circle at 20% 20%,#eef2ff 0,transparent 45%),
+  radial-gradient(circle at 80% 80%,#ecfeff 0,transparent 45%),#fff;
+  border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);overflow:hidden}
+.pane .hint{position:absolute;left:14px;bottom:12px;font-size:11px;color:#94a3b8;pointer-events:none}
+.pane .zoombar{position:absolute;right:14px;bottom:12px;display:flex;gap:6px}
+.zoombar .btn{padding:4px 9px;font-size:12px}
+#map{width:100%;height:100%;cursor:grab;display:block;touch-action:none}
+#map.dragging{cursor:grabbing}
+.node{cursor:pointer}
+.node rect{transition:filter .15s,stroke-width .15s}
+.node:hover rect{filter:brightness(.97)}
+.node.dim{opacity:.15}
+.node.sel rect{stroke-width:2.6}
+.node text{pointer-events:none;user-select:none}
+
+/* ---------- drawer ---------- */
+.drawer{width:400px;flex:0 0 400px;background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);display:flex;flex-direction:column;height:calc(100vh - 210px);min-height:560px}
+.drawer .dh{padding:14px 16px 12px;border-bottom:1px solid var(--line)}
+.drawer .dt{font-size:16px;font-weight:800;display:flex;align-items:center;gap:8px}
+.dot{width:10px;height:10px;border-radius:50%;flex:0 0 10px}
+.drawer .dm{font-size:12px;color:var(--muted);margin-top:4px}
+.drawer .db{overflow:auto;padding:14px 16px 20px;flex:1}
+.sec{margin-bottom:16px}
+.sec h4{margin:0 0 6px;font-size:12px;letter-spacing:.5px;color:#8a94a8;font-weight:700}
+.sec p{margin:0;font-size:13px}
+.sec ul{margin:0;padding-left:18px;font-size:13px}
+.sec li{margin:3px 0}
+.kpi{width:100%;border-collapse:collapse;font-size:12.5px}
+.kpi td{padding:5px 0;border-bottom:1px dashed var(--line);vertical-align:top}
+.kpi td:first-child{color:var(--muted);width:46%}
+.kpi td:last-child{font-weight:600}
+.gatebox{background:#f0fdf4;border:1px solid #bbf7d0;color:#065f46;border-radius:10px;padding:9px 11px;font-size:12.5px}
+.trapbox{background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:10px;padding:9px 11px;font-size:12.5px}
+.placeholder{color:var(--muted);font-size:13px;text-align:center;padding:40px 10px}
+
+/* ---------- stage detail ---------- */
+.stage{margin:16px 0;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#fff}
+.stage-h{display:flex;gap:12px;align-items:baseline;padding:12px 16px;color:#fff;flex-wrap:wrap}
+.stage-h .n{font-size:16px;font-weight:800}
+.stage-h .t{font-size:12px;opacity:.9}
+.stage-h .g{margin-left:auto;background:rgba(255,255,255,.18);padding:2px 10px;border-radius:999px;font-size:11px;font-weight:700}
+.stage-b{display:grid;grid-template-columns:1.1fr 1fr}
+@media(max-width:1100px){.stage-b{grid-template-columns:1fr}}
+.stage-col{padding:14px 16px}
+.stage-col + .stage-col{border-left:1px solid var(--line)}
+.stage-col h5{margin:0 0 8px;font-size:11px;color:#8a94a8;letter-spacing:.6px;font-weight:700}
+ol.steps{margin:0;padding-left:20px;font-size:12.5px;line-height:1.65}
+ol.steps li{margin:4px 0}
+.steps b{color:#1e293b}
+.mtab{width:100%;border-collapse:collapse;font-size:12px}
+.mtab th{background:#f1f4fa;text-align:left;padding:5px 7px;font-size:11px;color:#3b465c;font-weight:700;white-space:nowrap}
+.mtab td{padding:5px 7px;border-bottom:1px solid #eef1f7;vertical-align:top}
+.mtab td.v{font-weight:700;color:#0f766e;white-space:nowrap}
+.stage-f{padding:10px 16px;background:#fafbff;border-top:1px solid var(--line);display:flex;gap:20px;flex-wrap:wrap;font-size:12.5px;line-height:1.6}
+.stage-f div{flex:1;min-width:280px}
+.stage-f b{color:#0f172a}
+
+/* ---------- tables ---------- */
+section.block{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:18px 20px;margin-top:16px}
+section.block h2{font-size:18px;margin:0 0 4px}
+section.block .desc{color:var(--muted);font-size:12.5px;margin-bottom:14px}
+table.tb{width:100%;border-collapse:collapse;font-size:13px}
+table.tb th{background:#f1f4fa;color:#3b465c;text-align:left;font-size:12px;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+table.tb td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+table.tb tr:hover td{background:#fafbff}
+.pill{display:inline-block;font-size:11px;font-weight:700;padding:1px 8px;border-radius:999px;background:#eef2ff;color:#4338ca}
+.pill.red{background:#fef2f2;color:#b91c1c}
+.pill.green{background:#ecfdf5;color:#047857}
+.pill.amber{background:#fffbeb;color:#b45309}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:1100px){.cols{grid-template-columns:1fr}}
+.note{font-size:12px;color:var(--muted);margin-top:10px}
+.foot{color:#9aa4b8;font-size:12px;text-align:center;margin-top:26px}
+
+@media(max-width:1200px){
+  .main{flex-direction:column}
+  .drawer{width:100%;flex:1 1 auto;height:auto;max-height:none}
+  .pane{height:64vh}
+}
+@media print{
+  body{background:#fff}
+  .tools,.zoombar,.hint{display:none!important}
+  .pane{height:900px!important;min-height:0;border:0;box-shadow:none}
+  .drawer{display:none}
+  section.block{break-inside:avoid;box-shadow:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <div>
+      <h1>淘宝推品作战地图<span class="tag">v1.0</span></h1>
+      <div class="sub">从「一条链接」到「稳定盈利」的全流程作战图 · 6 个阶段 / 6 道关卡 / 47 个动作模块 · 编制 2026-11-02</div>
+    </div>
+    <div class="tools">
+      <input id="q" class="btn" style="min-width:180px;cursor:text" placeholder="搜索：主图 / 投产比 / 体验分…">
+      <button class="btn" id="btnExpand">展开全部</button>
+      <button class="btn" id="btnCollapse">收成主干</button>
+      <button class="btn" id="btnFit">适应屏幕</button>
+      <button class="btn primary" onclick="window.print()">打印 / 存 PDF</button>
+    </div>
+  </div>
+
+  <div class="gates" id="gates"></div>
+
+  <div class="main">
+    <div class="pane">
+      <svg id="map" xmlns="http://www.w3.org/2000/svg"></svg>
+      <div class="hint">拖拽平移 · 滚轮缩放 · 单击阶段展开并看详情 · 再单击一次收起</div>
+      <div class="zoombar">
+        <button class="btn" id="zi">＋</button>
+        <button class="btn" id="zo">－</button>
+        <button class="btn" id="zr">复位</button>
+      </div>
+    </div>
+    <div class="drawer">
+      <div class="dh">
+        <div class="dt"><span class="dot" style="background:#141b2d"></span><span id="dTitle">总览</span></div>
+        <div class="dm" id="dMeta">点左边任意节点，看这一格具体做什么、看什么数、什么算过关</div>
+      </div>
+      <div class="db" id="dBody"></div>
+    </div>
+  </div>
+
+  <section class="block">
+    <h2>一、六阶段速查总表</h2>
+    <div class="desc">先看这张表定节奏；具体每一步怎么做、每个指标卡多少，看下一节「六阶段详解」。</div>
+    <table class="tb" id="stageTable">
+      <thead><tr><th style="width:86px">阶段</th><th style="width:96px">时间</th><th style="width:150px">唯一目标</th><th>关键动作</th><th style="width:270px">过关线（Gate）</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <section class="block">
+    <h2>二、六阶段详解：每一步怎么做、看什么数</h2>
+    <div class="desc">每个阶段拆成「编号动作步骤 + 指标表（目标值 / 红线 / 在哪看）+ 产出物 + 过关线 + 不过关怎么救」。<b>执行时就按这个顺序做，不要跳步。</b></div>
+    <div id="stageDetail"></div>
+  </section>
+
+  <section class="block">
+    <h2>三、指标字典（口径 + 红线）</h2>
+    <div class="desc">所有指标先统一口径，再谈优化。行业均值请在「生意参谋 → 市场/竞争」里按自己的叶子类目校准，本表阈值属于通用参考值。</div>
+    <table class="tb" id="kpiTable">
+      <thead><tr><th style="width:130px">指标</th><th style="width:230px">口径 / 公式</th><th style="width:120px">健康值</th><th style="width:120px">红线</th><th>说明</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <div class="cols">
+    <section class="block">
+      <h2>四、钱怎么花：预算与投产比模型</h2>
+      <div class="desc">先算保本 ROI，再定预算；不然投得越多亏得越快。</div>
+      <table class="tb">
+        <tbody>
+          <tr><td style="width:150px"><b>毛利额</b></td><td>到手价 −（采购 + 包装 + 快递 + 平台佣金 0.6%~5% + 支付手续费约 1% + 运费险 + 退货损耗）</td></tr>
+          <tr><td><b>毛利率</b></td><td>毛利额 ÷ 到手价</td></tr>
+          <tr><td><b>保本 ROI</b></td><td><b>1 ÷ 毛利率</b>（毛利率 40% → 保本 ROI 2.5）</td></tr>
+          <tr><td><b>可承受广告占比</b></td><td>≤ 毛利率 × 60%（例：毛利 40% → 广告最多吃掉 GMV 的 24%）</td></tr>
+          <tr><td><b>冷启预算</b></td><td>日预算 = 目标日销 × 客单价 × 保本ROI × 0.6（允许亏 40% 买权重）</td></tr>
+          <tr><td><b>放量预算</b></td><td>日预算 = 目标日销 × 客单价 ÷ 目标ROI，且 ≤ GMV × 可承受广告占比</td></tr>
+          <tr><td><b>停投线</b></td><td>连续 7 天 ROI &lt; 保本 ROI × 0.7，或广告占比 &gt; 35% → 停投整改</td></tr>
+        </tbody>
+      </table>
+      <div class="note">⚠️ 退货率高的类目（服饰/鞋包/家居布艺）务必把退货损耗算进成本，否则 ROI 看着赚钱、月底一算亏钱。</div>
+    </section>
+
+    <section class="block">
+      <h2>五、每日 / 每周动作清单</h2>
+      <div class="desc">推品不是一次性工程，是每天 20 分钟的固定动作。</div>
+      <table class="tb">
+        <tbody>
+          <tr><td style="width:90px"><span class="pill">每日 20min</span></td><td>看昨日 GMV / UV / 转化 / 花费 / ROI；中差评回复；库存与发货异常；在投计划有无掉量；竞品 TOP3 价格变动</td></tr>
+          <tr><td><span class="pill">每周 60min</span></td><td>关键词增减（7 天无成交词砍掉）；人群包表现；主图 CTR 对比；退款原因归类；周环比四象限（量/价/费/评）</td></tr>
+          <tr><td><span class="pill amber">每 30 天</span></td><td>主图迭代 1 次（CTR 会衰减）；详情页优化；价格带复核；利润表复盘；竞品图谱更新</td></tr>
+          <tr><td><span class="pill amber">每 90 天</span></td><td>单品生命周期判断（继续投 / 维稳 / 清仓）；扩品或裂变；供应链与成本重谈</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </div>
+
+  <section class="block">
+    <h2>六、最常见的 10 个死法（提前避）</h2>
+    <div class="desc">下面每一条都对应真实亏钱路径，开推之前先自查一遍。</div>
+    <table class="tb">
+      <thead><tr><th style="width:40px">#</th><th style="width:220px">死法</th><th>表现</th><th style="width:46%">对策</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>主图不行，硬砸广告</td><td>曝光有、点击 0.5%，钱全烧在点击前</td><td>先 AB 测图到 CTR ≥ 行业 1.2 倍，再谈加预算</td></tr>
+        <tr><td>2</td><td>没算保本 ROI 就开投</td><td>ROI 3 看着不错，实际毛利只有 25%</td><td>先算 1÷毛利率，写进投放目标</td></tr>
+        <tr><td>3</td><td>刷单破零</td><td>降权、清销量、扣分，链接直接废</td><td>老客/私域/客服真实成交，宁可慢</td></tr>
+        <tr><td>4</td><td>标题堆词</td><td>30 字全是词，没有一个能被搜到</td><td>1 核心词 + 3 属性词 + 2 场景词 + 长尾</td></tr>
+        <tr><td>5</td><td>低价冲量后提价</td><td>人群标签被打成低消费，提价即掉量</td><td>一开始就定住价格带，用券不用改价</td></tr>
+        <tr><td>6</td><td>断货</td><td>爆了但发不出，权重断崖</td><td>安全库存 = 日均销 × 补货周期 × 1.5</td></tr>
+        <tr><td>7</td><td>只投不管售后</td><td>DSR 掉到 4.6，流量直接腰斩</td><td>中差评 24h 处理，退货原因归类整改</td></tr>
+        <tr><td>8</td><td>全站推广一上来就开</td><td>新品权重低，系统乱投，烧完没沉淀</td><td>日销稳定 + ROI 达标后再开</td></tr>
+        <tr><td>9</td><td>大促前才备货</td><td>报名了没库存，或被临时加价</td><td>大促前 30 天备货、15 天报名</td></tr>
+        <tr><td>10</td><td>不看竞品</td><td>对手换主图/降价，自己一周后才发现</td><td>每周固定扫 TOP10，建价格与主图档案</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="foot">淘宝推品作战地图 v1.0 · 编制 2026-11-02 · 数据口径以「生意参谋 / 阿里妈妈万相台无界版」后台为准，平台规则变动请以官方公告复核</div>
+</div>
+
+<script>
+/* =========================================================
+   数据层：7 条主干 → 46 个动作模块
+   ========================================================= */
+const DATA = {
+  center: { title: "淘宝推品", sub: "从链接到盈利" },
+  branches: [
+    {
+      id: "p0", name: "0 选品·定价", days: "D-15 ~ D-1", gate: "G0", color: "var(--p0)", hex: "#6366f1",
+      goal: "先算清能不能赚钱，再决定做不做",
+      pass: "市场容量 / 竞争格局 / 利润模型 / 合规资质 —— 四项全绿才立项",
+      children: [
+        { t: "市场容量与趋势", goal: "确认这个类目“有人买、且在涨”", do: ["生意参谋→市场洞察：看近 12 个月搜索人气与交易指数曲线", "看季节性：旺季还剩几个月，避免上架即淡季", "看子类目细分：避开被品牌垄断的大词赛道", "确认是否受平台政策 / 节日 / 气候驱动"], kpi: [["月搜索人气", "≥ 5 万"], ["在线商品数 : 搜索人气", "≤ 3 : 1"], ["近 3 月趋势", "跌幅 < 20%"]], pass: "三项任一不达标 → 不做", trap: "只看搜索人气高、不看在线商品数，进去发现是血海" },
+        { t: "竞争格局与坑产", goal: "知道头部靠什么赢、月销门槛多少", do: ["抓 TOP20：价格 / 月销 / 评价数 / 主图 / 是否天猫 / 是否品牌", "算坑产 = 月销量 × 客单价，看进榜需要多少", "找“可打层”：月销 300~2000、评价 < 1000 的非品牌链接", "记录头部主图与卖点，找同质化空位"], kpi: [["可打层对手数", "≥ 5 家"], ["头部集中度 CR5", "< 60%"], ["TOP10 最低月销", "作为冲榜目标"]], pass: "CR5 > 80% 且全是品牌 → 换细分", trap: "只看销量排序的头部，真正对手其实是第 20~50 名" },
+        { t: "价格带卡位", goal: "找到“有人买、竞争少、还有毛利”的价格缝", do: ["统计 TOP100 价格分布（39 / 59 / 79 / 99 区间）", "找断层带：某区间商品数明显少但销量不低", "定主推价 + 2 个陪衬 SKU（上探 / 下探）", "保证券后到手价落在目标带，而不是一口价"], kpi: [["目标价格带商品占比", "10%~30%"], ["到手价与类目中位价偏离", "≤ 15%"], ["价格带内毛利率", "≥ 35%"]], pass: "价格带内算不出利润 → 不立项", trap: "一口价定得漂亮，券后价掉进血战带" },
+        { t: "利润模型与保本ROI", goal: "算出每单最低能亏多少、ROI 低于多少必须停", do: ["成本 = 采购 + 包装 + 快递 + 平台佣金(0.6%~5%) + 支付手续费(约1%) + 运费险 + 退货损耗", "退货损耗 = 退货率 × 单均履约成本 × 2（来回运费+折旧）", "毛利额 = 到手价 − 成本；毛利率 = 毛利额 ÷ 到手价", "保本 ROI = 1 ÷ 毛利率，写进投放目标"], kpi: [["毛利率（标品）", "≥ 35%"], ["毛利率（非标）", "≥ 45%"], ["保本 ROI", "≤ 3.0"]], pass: "毛利率 < 25% → 靠广告几乎不可能盈利", trap: "忘算退货成本，服饰/鞋包退货率 20%~40%" },
+        { t: "人群与卖点定位", goal: "一句话说清：卖给谁、解决什么、凭什么信", do: ["定核心人群：性别 / 年龄 / 城市 / 消费力 / 使用场景", "提炼 1 个主卖点 + 2 个支撑点，且必须能视觉化", "对比 TOP5 卖点，找没人讲的角度", "做“卖点—证据”表：检测报告 / 材质 / 对比实验"], kpi: [["主卖点能否 3 秒说清", "是/否"], ["是否有可验证证据", "至少 1 项"], ["与 TOP5 卖点重合度", "< 50%"]], pass: "卖点无法视觉化 → 推倒重来", trap: "卖点全是“高品质 / 超好用 / 性价比”这类无法证明的词" },
+        { t: "合规与资质", goal: "上架前把会被下架扣分的东西清干净", do: ["类目资质：3C / 食品经营 / 化妆品备案 / 质检报告", "商标与授权链路（品牌方→经销商→店铺）", "图片版权：禁盗图，模特图需授权", "文案极限词扫描：最 / 第一 / 国家级 / 100%", "专利规避：外观专利与实用新型检索"], kpi: [["资质齐全度", "100%"], ["极限词命中", "0 处"], ["侵权风险项", "0 项"]], pass: "任一缺失 → 不上架", trap: "先上架后补资质，被下架后链接权重清零、重上等于从零开始" }
+      ]
+    },
+    {
+      id: "p1", name: "1 上架·内功", days: "D1 ~ D3", gate: "G1", color: "var(--p1)", hex: "#0ea5e9",
+      goal: "把“点击前”和“点击后”两件事做到行业上游",
+      pass: "内功清单 100% + 测图 CTR ≥ 行业均值 1.2 倍 + 详情跳出率 < 70%",
+      children: [
+        { t: "类目与属性", goal: "让系统知道你是谁，才能把你推给对的人", do: ["选最精准的叶子类目（错放=流量全错）", "属性填满率 100%，能填的全填", "核心属性（材质/尺寸/风格/适用人群）必须与实物一致", "品牌栏：有商标就填，没有就留空，别乱填"], kpi: [["属性完整度", "100%"], ["类目错放", "0"], ["核心属性与实物一致", "100%"]], pass: "属性缺项 > 2 项 → 补全再上", trap: "为蹭流量选大类目，结果推荐人群全不对" },
+        { t: "标题（30 字）", goal: "覆盖真实搜索词，且读起来像人话", do: ["结构：1 核心词 + 3 属性词 + 2 场景词 + 长尾词", "核心词放前 6 个字（权重更高）", "不重复、不堆砌、不加空格凑字数", "用生意参谋搜索词榜验证每个词有搜索量"], kpi: [["核心词搜索量", "≥ 5000/月"], ["无效词", "0"], ["字符数", "≤ 30 个汉字"]], pass: "每个词都能在搜索词榜查到 → 过关", trap: "30 字塞 15 个词，最后一个都搜不到" },
+        { t: "主图 6 张", goal: "第一张决定点击率，后五张决定转化率", do: ["第1张：白底/场景首图，主体占画面 70%+", "第2张：核心卖点（3 秒能看懂）", "第3张：使用场景 / 人群", "第4张：材质细节 / 工艺", "第5张：尺寸对比 / 参数", "第6张：信任背书（资质/销量/服务）", "规格 1:1、≥ 800×800，禁牛皮癣"], kpi: [["首图点击率", "≥ 行业均值 1.2 倍"], ["主图完整度", "6 张全"], ["牛皮癣/违规", "0"]], pass: "AB 测图 3 天，胜出版本 CTR 高出 ≥ 20%", trap: "六张图全是产品摆拍，没有一张讲卖点" },
+        { t: "主图视频", goal: "用 9~30 秒把“值不值”讲完", do: ["前 3 秒给钩子（痛点/效果对比）", "中段演示核心功能，后段给信任", "全程字幕（静音观看占多数）", "音乐用平台曲库，避免版权投诉"], kpi: [["视频完播率", "≥ 35%"], ["时长", "9~30 秒"], ["带视频商品转化提升", "+10%~30%"]], pass: "完播率 < 20% → 重剪", trap: "前 5 秒放 logo 和品牌故事，用户已经划走" },
+        { t: "详情页", goal: "把“想买”变成“敢买”", do: ["结构：痛点 → 方案 → 证据 → 参数 → 场景 → 信任 → 售后", "首屏 3 秒讲清“这是什么、解决什么”", "手机端字号 ≥ 28px，一屏一个信息点", "放对比图 / 检测报告 / 真实评价截图"], kpi: [["详情跳出率", "< 70%"], ["页面停留", "≥ 25 秒"], ["加购率", "≥ 8%"]], pass: "跳出率 > 80% → 首屏重做", trap: "详情页做成产品说明书，参数堆三屏没有一句人话" },
+        { t: "SKU 与价格体系", goal: "让每个人都买到“刚好适合自己”的那一档", do: ["三档结构：引流款（低价小规格）/ 主推款 / 利润款（套装）", "SKU 图风格统一，颜色与实物一致", "库存 ≥ 预估 15 天销量", "SKU 名称带场景词，方便搜索匹配"], kpi: [["SKU 动销率", "≥ 60%"], ["主推 SKU 销量占比", "≥ 50%"], ["可售库存天数", "≥ 15 天"]], pass: "主推 SKU 不明确 → 重新规划", trap: "SKU 太多太散，每个都备一点货，最后全压库存" },
+        { t: "优惠与权益", goal: "用券调价，不动一口价", do: ["店铺券 / 商品券 / 满减 / 首单礼金 / 限时折扣组合", "设计到手价梯度：单人价 / 两件价 / 会员价", "大促前锁价，避免活动价低于日常价太多", "所有优惠在详情页写清楚，减少咨询与纠纷"], kpi: [["券使用率", "20%~40%"], ["到手价稳定性", "波动 ≤ 10%"], ["优惠后毛利率", "≥ 保本线"]], pass: "券后毛利 < 0 → 重设", trap: "一口价虚高再打 5 折，平台比价后直接限流" },
+        { t: "服务与物流", goal: "服务分是隐形的流量开关", do: ["开通 7 天无理由、运费险、极速退款", "承诺 24h 发货并做到（揽收率 ≥ 95%）", "客服 3 分钟响应率 ≥ 90%，预设快捷话术", "包裹卡 / 售后卡：引导好评与复购"], kpi: [["24h 揽收率", "≥ 95%"], ["3 分钟响应率", "≥ 90%"], ["DSR 三项", "≥ 4.8"]], pass: "响应率 < 80% → 加人/加自动回复", trap: "为了省运费险不开，结果退款纠纷率翻倍、体验分掉" }
+      ]
+    },
+    {
+      id: "p2", name: "2 冷启动", days: "D1 ~ D14", gate: "G2", color: "var(--p2)", hex: "#f59e0b",
+      goal: "破零、打标签、拿到新品扶持流量",
+      pass: "14 天 ≥ 30 单 + 评价 ≥ 15 条 + 入池词 ≥ 20 个 + CTR/CVR 达行业 0.8 倍以上",
+      children: [
+        { t: "破零 10~30 单", goal: "让系统相信这个链接“有人买”", do: ["老客 / 私域 / 客服一对一推荐", "搭配店铺其他款做套餐，自然带单", "直播间/短视频挂车引导首单", "严禁刷单：降权、清销量、扣分，一次就废"], kpi: [["7 天破零单量", "≥ 10 单"], ["首单来自真实用户", "100%"], ["异常订单占比", "0"]], pass: "14 天 < 10 单 → 检查主图/价格/流量入口", trap: "找人刷 50 单，第二周就被清销量，权重比新品还低" },
+        { t: "新品标与新品运营", goal: "吃满平台给新品的 28~30 天扶持", do: ["首发：新图、新标题、新详情，避免被判旧品", "新品运营中心完成任务，领流量券", "新品期集中做点击率与转化率（系统在测你）", "记录打标日，倒排 30 天冲刺计划"], kpi: [["是否打上新品标", "是"], ["新品期 CTR", "≥ 行业 1.1 倍"], ["扶持流量占比", "≥ 15%"]], pass: "没打标 → 检查首发属性与图片重复度", trap: "拿老图改个标题就上，被判重复铺货，没有新品流量" },
+        { t: "关键词推广测词", goal: "用最少钱找到“能成交的词”", do: ["选 20~30 个长尾精准词，精准匹配", "日预算 50~100，出价按行业均价 80% 起", "每 3 天看一次：有点击无成交的词降价，无展现的词加价", "7 天淘汰：CTR < 1% 或 0 成交"], kpi: [["测词周期", "7~10 天"], ["有效词（有成交）", "≥ 5 个"], ["单次点击成本", "≤ 保本CPC"]], pass: "找到 ≥ 5 个能成交的词 → 进放量", trap: "一上来投大词，点一次 3 块钱，50 个点击一单不出" },
+        { t: "智能推广托底", goal: "让系统帮你补量，但不抢主计划预算", do: ["开控成本 / 控 ROI 的智能计划", "日预算 50 左右，只做补充", "单独看它的搜索词报告，把跑偏的词加否词", "不与关键词计划投同一批词，避免内部竞价"], kpi: [["智能计划 ROI", "≥ 保本 × 0.6"], ["无效花费占比", "< 20%"], ["否词更新", "每周 1 次"]], pass: "连续 7 天 ROI 低于保本 0.5 → 关掉", trap: "智能计划预算给太大，把自然流量顶掉还多花钱" },
+        { t: "内容种草", goal: "用内容拿到免费流量与信任", do: ["逛逛 / 短视频日更 1~2 条（15~30 秒）", "找 5~10 个腰部达人寄样，换真实测评", "内容统一挂同一卖点，形成记忆点", "把优质内容二次剪成主图视频素材"], kpi: [["周发布条数", "≥ 7 条"], ["内容引流 UV", "≥ 总 UV 10%"], ["种草成本", "≤ 5 元/单"]], pass: "内容 UV 占比 < 5% → 换选题方向", trap: "把详情页图片拼成视频发，完播率不到 10%" },
+        { t: "淘宝客起量", goal: "快速做基础销量，但别把价格体系打乱", do: ["设 10%~20% 佣金，周期 30 天", "只推 1~2 个 SKU，避免全店被薅", "配合优惠券做“券后价”，不降一口价", "到期及时下调佣金，防止长期依赖"], kpi: [["淘客单占比", "≤ 30%"], ["淘客 ROI", "≥ 1"], ["佣金成本", "≤ 毛利 30%"]], pass: "淘客单占比 > 50% → 停，改回搜索流量", trap: "高佣+大额券做爆，活动一停单量归零，人群还被拉低" },
+        { t: "数据基线与埋点", goal: "没有基线，所有优化都是拍脑袋", do: ["建日报表：曝光 / 点击 / 加购 / 成交 / 花费 / ROI", "记录同叶子类目行业均值（CTR/CVR/UV价值）", "标注每次改动（改图/改价/改词）与日期", "每周固定时间复盘，不随时改"], kpi: [["数据完整率", "100%"], ["复盘频率", "每周 1 次"], ["改动可追溯", "是"]], pass: "连续 7 天数据缺失 → 先补数据再谈优化", trap: "同一天改图又改价又改词，最后不知道哪个起作用" }
+      ]
+    },
+    {
+      id: "p3", name: "3 放量", days: "D15 ~ D45", gate: "G3", color: "var(--p3)", hex: "#ef4444",
+      goal: "把“能卖”变成“卖得多”，冲进子类目可视频道",
+      pass: "日销周环比 +20% + 搜索流量占比 ≥ 30% + ROI ≥ 保本线 + 广告占比 ≤ 30%",
+      children: [
+        { t: "核心词抢位", goal: "把 5~10 个核心词打到首页", do: ["按“搜索量 × 转化率”筛出 5~10 个主词", "出价 = 行业均价 × 1.1 起，抢前 3 页", "用分时折扣：0~8 点降到 30%，晚 8~11 点加价", "每周看排名，掉出前 3 页就加价或换词"], kpi: [["核心词首页数", "≥ 5 个"], ["关键词 ROI", "≥ 保本"], ["搜索流量占比", "≥ 30%"]], pass: "连续 2 周核心词进不了前 3 页 → 换词或提权重", trap: "所有词一个出价，贵的词亏、便宜的词没展现" },
+        { t: "人群推广拉新", goal: "把“看过类似商品的人”捞回来", do: ["三层人群：相似店铺 / 类目行为 / 达摩盘自定义", "拉新层看新客成本，收割层看 ROI", "人群包每 2 周更新一次，避免疲劳", "对已收藏加购未买的人单独加价"], kpi: [["新客成本", "≤ 首单毛利"], ["人群 ROI", "≥ 保本 × 1.1"], ["加购成本", "≤ 客单价 × 15%"]], pass: "新客成本 > 首单毛利 → 收缩人群", trap: "人群包开太大，投的全是本来就会买的人" },
+        { t: "全站推广", goal: "让系统接管全局流量，但要守住 ROI", do: ["开启条件：日销稳定 ≥ 7 天、ROI ≥ 保本", "设置目标 ROI = 保本 × 1.2，先观察 7 天", "与关键词计划错位：全站吃推荐，关键词吃搜索", "每天看“全站带来的搜索词”，跑偏及时调"], kpi: [["全站 ROI", "≥ 保本 × 1.1"], ["全站 GMV 占比", "≤ 40%"], ["7 天稳定", "波动 < 20%"]], pass: "7 天 ROI 低于保本 → 关掉回关键词", trap: "新品一上就开全站，系统乱投，钱烧完没有沉淀" },
+        { t: "内容场放大", goal: "把内容变成稳定的第二流量入口", do: ["短视频挂车 + 直播切片，日更不断", "达人矩阵：10 个腰部 > 1 个头部（成本可控）", "把爆款内容做成模板，批量复制", "内容与搜索词打通：视频标题带核心词"], kpi: [["内容 UV 占比", "≥ 20%"], ["内容转化率", "≥ 1%"], ["单条内容成本", "≤ 30 元"]], pass: "内容 UV 连续 2 周 < 10% → 换形式（直播/图文）", trap: "只发不投，内容自然流量起不来就放弃" },
+        { t: "活动与频道", goal: "用平台活动做阶段性冲量", do: ["天天特卖 / 聚划算 / 百亿补贴（看门槛与比价要求）", "店铺满减 + 跨店满减叠加，设计好到手价", "报名前确认库存与发货能力", "活动后 3 天内复盘：新客占比、复购、退款"], kpi: [["活动 GMV 占比", "20%~35%"], ["活动新客占比", "≥ 30%"], ["活动后退款率", "≤ 类目均值"]], pass: "活动亏损 > 毛利 50% → 下次不报", trap: "为报名把价格打到底，活动结束价格回不去" },
+        { t: "直播", goal: "用实时演示解决“不敢买”", do: ["自播起号：固定时段、固定话术、固定福利", "达人专场：挑垂类达人，佣金 + 坑位费谈清楚", "直播间专享价，与日常价做区隔", "场观—停留—转化的漏斗每天记录"], kpi: [["平均停留", "≥ 60 秒"], ["直播转化率", "≥ 2%"], ["直播 ROI", "≥ 保本"]], pass: "连续 5 场 ROI < 1 → 停播复盘", trap: "直播间价格比日常低太多，把搜索流量的人全引到直播间" },
+        { t: "坑产冲刺", goal: "短期内把月销做到子类目榜单门槛", do: ["选 7 天窗口集中让利（真实优惠，不刷）", "广告 + 内容 + 活动三线同时推", "冲刺期保证库存与客服人力", "冲榜后立刻回归正常价，观察权重是否留住"], kpi: [["7 天 GMV", "≥ 榜单门槛"], ["冲刺期 ROI", "≥ 保本 × 0.8"], ["冲榜后 14 天留存", "≥ 70%"]], pass: "冲榜后掉回原点 → 说明靠的是价格不是权重", trap: "亏钱冲上榜，一停就掉，白亏一波" }
+      ]
+    },
+    {
+      id: "p4", name: "4 盈利", days: "D45 ~ D90", gate: "G4", color: "var(--p4)", hex: "#10b981",
+      goal: "从“卖得多”变成“赚得到”",
+      pass: "连续 14 天 ROI ≥ 保本 × 1.2 + 广告占比 ≤ 20% + 净利为正",
+      children: [
+        { t: "广告降本", goal: "同样的单量，花更少的钱", do: ["砍掉 7 天 0 成交、CTR < 1% 的词", "核心词降价 10%~20%，观察 3 天排名", "分时折扣精细化：只在高转化时段加价", "人群包收缩到 ROI 前 30% 的包"], kpi: [["CPC 环比", "−15%"], ["广告占比", "≤ 20%"], ["ROI 环比", "+20%"]], pass: "降价后排名掉出前 3 页 → 回调 10%", trap: "一刀切降价，核心词掉位，自然流量跟着掉" },
+        { t: "提客单", goal: "让每个进来的人多买一点", do: ["套装 / 组合装（2 件装、家庭装）", "满减门槛设在客单价 × 1.3", "详情页加“搭配购”，关联高毛利品", "客服主动推荐加购（话术标准化）"], kpi: [["客单价 AOV", "+15%"], ["搭配购点击率", "≥ 8%"], ["满减使用率", "≥ 25%"]], pass: "AOV 提升但转化率跌 > 20% → 门槛太高", trap: "套装定价没算清，卖得越多亏得越多" },
+        { t: "提复购", goal: "把一次性买家变成老客", do: ["复购券：确认收货后 7 天发", "淘宝群 / 粉丝群运营，固定上新节奏", "包裹卡引导加群 / 关注店铺", "客服回访：用完体验 + 引导复购"], kpi: [["复购率", "≥ 15%"], ["老客 GMV 占比", "≥ 20%"], ["群活跃率", "≥ 10%"]], pass: "复购 < 8% → 产品力或复购设计有问题", trap: "只拉新不做复购，获客成本永远降不下来" },
+        { t: "扩品裂变", goal: "用爆款带出新链接", do: ["同款新色 / 新规格 / 新场景", "老链接详情页导流新链接", "爆款评价里挖需求，做下一款", "新链接复用老链接的人群与词包"], kpi: [["新链接 30 天破零", "是"], ["老带新 GMV 占比", "≥ 15%"], ["新品成功率", "≥ 50%"]], pass: "新链接 45 天不出单 → 砍掉", trap: "一次上 10 个新品，资源分散，一个都推不起来" },
+        { t: "自然流量占比", goal: "让免费流量成为主力", do: ["持续做搜索词排名（核心词前 3 页）", "内容场稳定输出，积累推荐流量", "提升 UV 价值，系统才愿意给流量", "付费只做“点火”，不做“供氧”"], kpi: [["自然流量占比", "≥ 50%"], ["付费占比", "≤ 20% GMV"], ["UV 价值", "≥ 行业 1.2 倍"]], pass: "自然占比 < 35% → 付费依赖过重，降预算测试", trap: "停投就掉量，说明一直买的是流量不是权重" },
+        { t: "财务红线", goal: "每月算一次真账", do: ["月度利润表：GMV − 成本 − 广告 − 退货 − 平台费", "库存周转天数与滞销 SKU 清理", "现金流：账期、推广费、备货占用", "设定止损线：连续 2 个月净亏 → 收缩或退出"], kpi: [["净利率", "≥ 10%"], ["库存周转", "≤ 45 天"], ["滞销 SKU 占比", "≤ 15%"]], pass: "净利 < 5% → 提价或降本，二选一", trap: "只看 GMV 不看净利，规模越大亏越多" }
+      ]
+    },
+    {
+      id: "p5", name: "5 维护", days: "D90 起", gate: "G5", color: "var(--p5)", hex: "#8b5cf6",
+      goal: "守住权重、守住评分、守住利润",
+      pass: "月销波动 < 20% + DSR ≥ 4.8 + 复购 ≥ 15% + 0 违规",
+      children: [
+        { t: "评价与问大家", goal: "评价区是最强的转化页", do: ["中差评 24 小时内联系处理", "问大家 48 小时内布局优质回答", "引导追评（晒图/使用后反馈）", "把高频问题写进详情页，减少同类差评"], kpi: [["评价回复率", "100%"], ["差评处理时效", "≤ 24h"], ["好评率", "≥ 98%"]], pass: "差评率 > 3% → 产品/描述有问题，先改详情", trap: "差评不回复，潜在买家看到直接走" },
+        { t: "DSR 与体验分", goal: "评分掉下去，流量立刻掉", do: ["DSR 三项（描述/服务/物流）每周盯", "体验分是五项：商品/物流/咨询/售后/纠纷，每月看趋势与同行对比", "物流：换更稳的快递，24h 揽收率拉到 95% 以上", "服务：售后响应速度、退款处理时长"], kpi: [["DSR", "≥ 4.8"], ["体验分五项", "均不低于同行均值"], ["24h 揽收率", "≥ 95%"]], pass: "任一项低于同行均值 → 专项整改 2 周", trap: "只顾拉新不看评分，等到限流才反应过来" },
+        { t: "库存与补货", goal: "断货 = 权重断崖", do: ["安全库存 = 日均销 × 补货周期 × 1.5", "大促前 30 天备货，锁产能", "滞销 SKU 及时清仓，释放资金", "多仓布局，缩短发货时效"], kpi: [["可售天数", "≥ 15 天"], ["断货次数", "0"], ["滞销占比", "≤ 15%"]], pass: "可售 < 7 天 → 立即补货或限流", trap: "卖爆了没货，一周后权重回到解放前" },
+        { t: "竞品与价格战", goal: "不盲目跟价，但要知道对手在干什么", do: ["每周扫 TOP10：价格 / 主图 / 活动 / 新品", "建竞品档案，记录每次变动", "对手降价：用赠品/套装/服务应对，不硬跟", "对手上新：分析卖点，快速迭代"], kpi: [["竞品扫描频率", "每周 1 次"], ["价格偏离", "≤ 15%"], ["被抢词数", "≤ 2 个/月"]], pass: "核心词连续 2 周被抢 → 提权重或换词", trap: "跟着对手打价格战，两家一起亏" },
+        { t: "违规风控", goal: "一次违规，半年白干", do: ["极限词每月扫一次（最/第一/国家级/100%）", "图片版权与模特授权留档", "严禁虚假交易、诱导好评", "类目与属性不许错放", "售后纠纷第一时间介入，别拖成投诉"], kpi: [["违规扣分", "0"], ["投诉率", "≤ 0.05%"], ["处罚记录", "0"]], pass: "任一违规 → 立即整改并留档", trap: "详情页写“全网最低”，被举报一次扣分限流" },
+        { t: "大促日历", goal: "踩准节奏，别错过报名", do: ["38 焕新 / 618 / 99 / 双11 / 双12 / 年货节", "提前 30 天备货，提前 15 天报名", "大促价与日常价做区隔，别击穿价格体系", "大促后 7 天复盘：新客、退款、利润"], kpi: [["报名成功率", "100%"], ["大促 GMV 占比", "25%~40%"], ["大促后回落幅度", "≤ 30%"]], pass: "大促亏钱 → 下次只报有利润的场次", trap: "大促前临时备货，工厂排不上，眼睁睁看着流量" },
+        { t: "迭代节奏", goal: "链接会老，必须定期换血", do: ["主图每 30 天迭代一次（CTR 会衰减）", "详情页每 60 天优化一次", "每季度上新 1~2 款，保持店铺活跃", "老链接做“二次起爆”：换主图 + 加内容"], kpi: [["主图迭代周期", "≤ 30 天"], ["CTR 衰减", "< 15%"], ["季度上新", "≥ 1 款"]], pass: "CTR 连续 2 个月下滑 → 换图", trap: "一套主图用一年，点击率慢慢掉到行业一半" }
+      ]
+    },
+    {
+      id: "p6", name: "6 数据·复盘", days: "全程", gate: "贯穿", color: "var(--p6)", hex: "#475569",
+      goal: "用数据找漏损，而不是靠感觉调车",
+      pass: "日报不隔夜、周报有结论、月报能算钱",
+      children: [
+        { t: "指标树", goal: "一眼看出钱漏在哪一层", do: ["曝光 → 点击 → 加购 → 成交 → 复购", "每层算转化率，找最低的那一环", "对比行业均值，差距最大的优先改", "单变量拆解：是流量少了还是转化差了"], kpi: [["层级完整", "5 层全"], ["对比基准", "行业均值"], ["定位时效", "当日"]], pass: "找不到漏损层 → 数据埋点不全", trap: "只看 GMV，涨了不知道为什么涨，跌了不知道怎么救" },
+        { t: "日报", goal: "每天 20 分钟，异常当天发现", do: ["昨日：GMV / UV / 转化 / 花费 / ROI / 退款", "对比前 7 日均值，波动 > 20% 标红", "在投计划有无掉量、下线、余额不足", "中差评与库存异常"], kpi: [["出具时间", "每日 10:00 前"], ["异常响应", "当日"], ["字段完整", "100%"]], pass: "连续 3 天不做 → 推品等于闭眼开车", trap: "只看后台首页，不看分计划数据，问题被平均掉" },
+        { t: "周报", goal: "四象限复盘：量、价、费、评", do: ["量：GMV / 单量 / 流量结构", "价：客单价 / 折扣率 / 价格带位置", "费：广告花费 / CPC / ROI / 占比", "评：DSR / 退款率 / 差评关键词"], kpi: [["周环比", "每项都要有"], ["结论数", "≥ 3 条可执行"], ["责任人", "明确"]], pass: "周报没结论 → 等于没做", trap: "周报写成流水账，数字列一堆没有判断" },
+        { t: "月报", goal: "用财务口径算清这个品到底赚不赚", do: ["GMV − 成本 − 广告 − 退货 − 平台费 = 净利", "库存与资金占用", "单品生命周期判断：加投 / 维稳 / 清仓", "下月预算与目标"], kpi: [["净利率", "≥ 10%"], ["预算偏差", "≤ 20%"], ["结论", "继续/收缩/退出"]], pass: "连续 2 月净亏 → 执行退出或重构", trap: "用 GMV 给自己打气，账上一直没钱" },
+        { t: "异常诊断", goal: "掉量 30 分钟内知道去哪儿查", do: ["流量跌：先看是否降权/违规 → 再看广告余额 → 再看搜索排名", "转化跌：主图/价格/评价/竞品 → 逐项排除", "ROI 跌：CPC 涨了还是 CVR 跌了", "退款涨：看退款原因 Top3，改产品或改描述"], kpi: [["定位时长", "≤ 30 分钟"], ["修复时长", "≤ 24 小时"], ["复发率", "< 20%"]], pass: "同一问题一月复发 2 次 → 改流程不改数字", trap: "一掉量就加预算，结果是把亏损放大" },
+        { t: "AB 测试", goal: "一次只改一个变量，才知道什么有用", do: ["测试项：主图 / 标题 / 价格 / 详情首屏", "单变量，样本 ≥ 7 天或 ≥ 1000 UV", "看核心指标，不看感觉", "赢了全量，输了回滚，记录结论"], kpi: [["测试周期", "7 天"], ["样本量", "≥ 1000 UV"], ["结论留存", "100% 记录"]], pass: "样本不足就下结论 → 重测", trap: "同时改图改价，赢了不知道赢在哪" }
+      ]
+    }
+  ]
+};
+
+/* =========================================================
+   渲染：SVG 脑图
+   ========================================================= */
+const SVGNS = "http://www.w3.org/2000/svg";
+const svg = document.getElementById("map");
+const state = { k: 1, tx: 0, ty: 0, collapsed: new Set(DATA.branches.map(b => b.id)), sel: null, q: "" };
+
+const GEO = { cx: 0, cy: 0, cw: 190, ch: 92, bw: 186, bh: 56, chw: 244, chh: 40, xb: 300, xc: 590, gapY: 12, gapB: 46 };
+
+function el(tag, attrs, parent) {
+  const n = document.createElementNS(SVGNS, tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(n);
+  return n;
+}
+
+function layout() {
+  const nodes = [], links = [];
+  nodes.push({ id: "center", type: "center", x: 0, y: 0, w: GEO.cw, h: GEO.ch, title: DATA.center.title, sub: DATA.center.sub, color: "#141b2d" });
+
+  const right = DATA.branches.filter((b, i) => i < 4);
+  const left = DATA.branches.filter((b, i) => i >= 4);
+
+  function side(list, dir) {
+    // 计算每个 branch 块高度
+    const blocks = list.map(b => {
+      const kids = state.collapsed.has(b.id) ? [] : b.children;
+      const h = Math.max(GEO.bh, kids.length * (GEO.chh + GEO.gapY) - GEO.gapY);
+      return { b, kids, h };
+    });
+    const total = blocks.reduce((s, x) => s + x.h, 0) + GEO.gapB * (blocks.length - 1);
+    let cursor = -total / 2;
+    blocks.forEach(blk => {
+      const by = cursor + blk.h / 2;
+      const bx = dir * GEO.xb;
+      nodes.push({ id: blk.b.id, type: "branch", x: bx, y: by, w: GEO.bw, h: GEO.bh, title: blk.b.name, sub: blk.b.days, color: blk.b.hex, gate: blk.b.gate, count: blk.b.children.length });
+      links.push({ x1: dir * (GEO.cw / 2), y1: 0, x2: bx - dir * (GEO.bw / 2), y2: by, color: blk.b.hex, w: 2.2 });
+      let ky = by - (blk.kids.length * (GEO.chh + GEO.gapY) - GEO.gapY) / 2 + GEO.chh / 2;
+      blk.kids.forEach(ch => {
+        const cx = dir * GEO.xc;
+        nodes.push({ id: blk.b.id + "::" + ch.t, type: "child", x: cx, y: ky, w: GEO.chw, h: GEO.chh, title: ch.t, color: blk.b.hex, parent: blk.b.id });
+        links.push({ x1: bx + dir * (GEO.bw / 2), y1: by, x2: cx - dir * (GEO.chw / 2), y2: ky, color: blk.b.hex, w: 1.4 });
+        ky += GEO.chh + GEO.gapY;
+      });
+      cursor += blk.h + GEO.gapB;
+    });
+  }
+  side(right, 1);
+  side(left, -1);
+  return { nodes, links };
+}
+
+function curve(l, dir) {
+  const dx = Math.abs(l.x2 - l.x1) * 0.5;
+  const s = dir > 0 ? 1 : -1;
+  return `M${l.x1},${l.y1} C${l.x1 + s * dx},${l.y1} ${l.x2 - s * dx},${l.y2} ${l.x2},${l.y2}`;
+}
+
+const DEFS = '<defs><linearGradient id="gCenter" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1e293b"/><stop offset="1" stop-color="#0f172a"/></linearGradient><filter id="sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0f172a" flood-opacity="0.12"/></filter></defs>';
+
+function render() {
+  const { nodes, links } = layout();
+  svg.innerHTML = DEFS;
+  const g = el("g", { id: "viewport" }, svg);
+
+  links.forEach(l => {
+    const dir = l.x2 > 0 ? 1 : -1;
+    el("path", { d: curve(l, dir), fill: "none", stroke: l.color, "stroke-opacity": .35, "stroke-width": l.w, "stroke-linecap": "round" }, g);
+  });
+
+  nodes.forEach(n => {
+    const grp = el("g", { class: "node" + (state.sel === n.id ? " sel" : ""), "data-id": n.id }, g);
+    const dim = state.q && !(n.title || "").toLowerCase().includes(state.q) && !(n.sub || "").toLowerCase().includes(state.q);
+    if (dim) grp.classList.add("dim");
+
+    const isC = n.type === "center", isB = n.type === "branch";
+    const fill = isC ? "url(#gCenter)" : isB ? n.color : "#fff";
+    const stroke = isC ? "#0f172a" : n.color;
+    const txt = isC ? "#fff" : isB ? "#fff" : "#1e293b";
+    el("rect", {
+      x: n.x - n.w / 2, y: n.y - n.h / 2, width: n.w, height: n.h, rx: isC ? 16 : 10,
+      fill: fill, stroke: stroke, "stroke-width": isB ? 1.6 : 1.1, "stroke-opacity": isB ? 1 : .55,
+      filter: isC || isB ? "url(#sh)" : "none"
+    }, grp);
+
+    if (isC) {
+      el("text", { x: n.x, y: n.y - 8, "text-anchor": "middle", "font-size": 20, "font-weight": 800, fill: txt }, grp).textContent = n.title;
+      el("text", { x: n.x, y: n.y + 16, "text-anchor": "middle", "font-size": 12, fill: "#cbd5e1" }, grp).textContent = n.sub;
+    } else if (isB) {
+      el("text", { x: n.x, y: n.y - 6, "text-anchor": "middle", "font-size": 15, "font-weight": 700, fill: txt }, grp).textContent = n.title;
+      el("text", { x: n.x, y: n.y + 14, "text-anchor": "middle", "font-size": 11, fill: "rgba(255,255,255,.85)" }, grp).textContent = n.sub + " · " + n.count + " 项";
+    } else {
+      el("text", { x: n.x, y: n.y + 4.5, "text-anchor": "middle", "font-size": 12.5, fill: txt, "font-weight": 500 }, grp).textContent = n.title;
+      el("circle", { cx: n.x - n.w / 2 + 10, cy: n.y, r: 3, fill: n.color, "fill-opacity": .55 }, grp);
+    }
+
+    grp.addEventListener("click", ev => {
+      ev.stopPropagation();
+      if (isB) {
+        const wasSel = state.sel === n.id;
+        state.sel = n.id;
+        if (wasSel && !state.collapsed.has(n.id)) {
+          state.collapsed.add(n.id);
+          render();
+        } else {
+          state.collapsed.delete(n.id);
+          render();
+          requestAnimationFrame(() => zoomToBranch(n.id));
+        }
+        showDetail(n.id);
+        return;
+      }
+      state.sel = n.id;
+      render();
+      showDetail(n.id);
+    });
+    if (isB) grp.addEventListener("dblclick", ev => { ev.stopPropagation(); toggleBranch(n.id); });
+  });
+
+  applyTransform();
+}
+
+function applyTransform() {
+  const vp = document.getElementById("viewport");
+  if (vp) vp.setAttribute("transform", `translate(${state.tx},${state.ty}) scale(${state.k})`);
+}
+
+function toggleBranch(id) {
+  if (state.collapsed.has(id)) state.collapsed.delete(id); else state.collapsed.add(id);
+  render();
+}
+
+function zoomToBranch(id) {
+  const { nodes } = layout();
+  const keep = nodes.filter(n => n.type === "center" || n.id === id || n.parent === id);
+  fitNodes(keep, .92);
+}
+
+function fitNodes(list, maxK) {
+  if (!list.length) return fit();
+  const r = svg.getBoundingClientRect();
+  const minX = Math.min(...list.map(n => n.x - n.w / 2)) - 50;
+  const maxX = Math.max(...list.map(n => n.x + n.w / 2)) + 50;
+  const minY = Math.min(...list.map(n => n.y - n.h / 2)) - 50;
+  const maxY = Math.max(...list.map(n => n.y + n.h / 2)) + 50;
+  const k = Math.min(r.width / (maxX - minX), r.height / (maxY - minY), maxK || 1.1);
+  state.k = k;
+  state.tx = r.width / 2 - ((minX + maxX) / 2) * k;
+  state.ty = r.height / 2 - ((minY + maxY) / 2) * k;
+  applyTransform();
+}
+
+function fit(animate) {
+  const r = svg.getBoundingClientRect();
+  const { nodes } = layout();
+  const xs = nodes.map(n => n.x - n.w / 2), xe = nodes.map(n => n.x + n.w / 2);
+  const ys = nodes.map(n => n.y - n.h / 2), ye = nodes.map(n => n.y + n.h / 2);
+  const minX = Math.min(...xs) - 40, maxX = Math.max(...xe) + 40;
+  const minY = Math.min(...ys) - 40, maxY = Math.max(...ye) + 40;
+  const k = Math.min(r.width / (maxX - minX), r.height / (maxY - minY), 1.35);
+  state.k = k;
+  state.tx = r.width / 2 - ((minX + maxX) / 2) * k;
+  state.ty = r.height / 2 - ((minY + maxY) / 2) * k;
+  applyTransform();
+}
+
+/* 交互：拖拽 / 滚轮 */
+let drag = null;
+svg.addEventListener("pointerdown", e => {
+  if (e.target.closest(".node")) return;
+  drag = { x: e.clientX, y: e.clientY, tx: state.tx, ty: state.ty };
+  svg.classList.add("dragging");
+  svg.setPointerCapture(e.pointerId);
+});
+svg.addEventListener("pointermove", e => {
+  if (!drag) return;
+  state.tx = drag.tx + (e.clientX - drag.x);
+  state.ty = drag.ty + (e.clientY - drag.y);
+  applyTransform();
+});
+svg.addEventListener("pointerup", () => { drag = null; svg.classList.remove("dragging"); });
+svg.addEventListener("wheel", e => {
+  e.preventDefault();
+  const rect = svg.getBoundingClientRect();
+  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+  const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
+  const nk = Math.max(.3, Math.min(2.6, state.k * factor));
+  state.tx = mx - (mx - state.tx) * (nk / state.k);
+  state.ty = my - (my - state.ty) * (nk / state.k);
+  state.k = nk;
+  applyTransform();
+}, { passive: false });
+
+document.getElementById("zi").onclick = () => { state.k = Math.min(2.6, state.k * 1.2); applyTransform(); };
+document.getElementById("zo").onclick = () => { state.k = Math.max(.3, state.k / 1.2); applyTransform(); };
+document.getElementById("zr").onclick = () => fit();
+document.getElementById("btnFit").onclick = () => fit();
+document.getElementById("btnExpand").onclick = () => { state.collapsed.clear(); render(); fit(); };
+document.getElementById("btnCollapse").onclick = () => { DATA.branches.forEach(b => state.collapsed.add(b.id)); render(); fit(); };
+document.getElementById("q").addEventListener("input", e => { state.q = e.target.value.trim().toLowerCase(); render(); });
+
+/* =========================================================
+   详情面板
+   ========================================================= */
+function findNode(id) {
+  if (id === "center") return { type: "center" };
+  const parts = id.split("::");
+  const b = DATA.branches.find(x => x.id === parts[0]);
+  if (!b) return null;
+  if (parts.length === 1) return { type: "branch", b };
+  return { type: "child", b, c: b.children.find(x => x.t === parts[1]) };
+}
+
+function showDetail(id) {
+  const n = findNode(id);
+  const T = document.getElementById("dTitle"), M = document.getElementById("dMeta"), B = document.getElementById("dBody");
+  if (!n) return;
+  if (n.type === "center") { resetDrawer(); return; }
+  const b = n.b;
+  T.innerHTML = '<span class="dot" style="background:' + b.hex + '"></span>' + (n.type === "branch" ? b.name : n.c.t);
+  M.textContent = n.type === "branch" ? (b.days + " · 关卡 " + b.gate) : (b.name + " · " + b.days);
+
+  let h = "";
+  if (n.type === "branch") {
+    h += '<div class="sec"><h4>阶段目标</h4><p>' + b.goal + "</p></div>";
+    h += '<div class="sec"><h4>过关线（Gate ' + b.gate + '）</h4><div class="gatebox">' + b.pass + "</div></div>";
+    h += '<div class="sec"><h4>本阶段 ' + b.children.length + " 个动作模块</h4><ul>" + b.children.map(c => "<li>" + c.t + "</li>").join("") + "</ul></div>";
+    h += '<div class="sec"><p style="color:#8a94a8;font-size:12px">点左侧子节点 / 点图上子节点，看单项动作与指标。</p></div>';
+  } else {
+    const c = n.c;
+    h += '<div class="sec"><h4>这一格要解决什么</h4><p>' + c.goal + "</p></div>";
+    h += '<div class="sec"><h4>关键动作</h4><ul>' + c.do.map(x => "<li>" + x + "</li>").join("") + "</ul></div>";
+    h += '<div class="sec"><h4>看什么数</h4><table class="kpi">' + c.kpi.map(r => "<tr><td>" + r[0] + "</td><td>" + r[1] + "</td></tr>").join("") + "</table></div>";
+    h += '<div class="sec"><h4>过关标准</h4><div class="gatebox">' + c.pass + "</div></div>";
+    h += '<div class="sec"><h4>常见坑</h4><div class="trapbox">' + c.trap + "</div></div>";
+  }
+  B.innerHTML = h;
+  B.scrollTop = 0;
+}
+
+function resetDrawer() {
+  document.getElementById("dTitle").innerHTML = '<span class="dot" style="background:#141b2d"></span>总览 · 六阶段一条线';
+  document.getElementById("dMeta").textContent = "点任意节点，看这一格具体做什么、看什么数、什么算过关";
+  const rows = DATA.branches.map(b =>
+    '<tr><td style="width:96px"><span class="dot" style="display:inline-block;background:' + b.hex + '"></span> ' + b.days + "</td><td>" + b.goal + "</td></tr>"
+  ).join("");
+  document.getElementById("dBody").innerHTML =
+    '<div class="sec"><h4>主线逻辑</h4><p>选品算账 → 上架内功 → 冷启破零 → 放量抢位 → 降本盈利 → 长期维护，每一步都有明确过关线，不过关不加预算。</p></div>' +
+    '<table class="kpi">' + rows + "</table>" +
+    '<div class="sec" style="margin-top:14px"><div class="trapbox">核心原则：<b>点击率决定能不能进场，转化率决定能走多远，ROI 决定能活多久，评分决定能不能一直活。</b></div></div>';
+}
+
+/* =========================================================
+   静态表格
+   ========================================================= */
+(function buildTables() {
+  document.getElementById("gates").innerHTML = DATA.branches.map(b =>
+    '<div class="gate" style="--c:' + b.hex + '"><div class="g">' + b.gate + '</div><div class="n">' + b.name + '</div><div class="d">' + b.days + " · " + b.children.length + " 项</div></div>"
+  ).join("");
+
+  document.querySelector("#stageTable tbody").innerHTML = DATA.branches.map(b =>
+    "<tr><td><b>" + b.name + "</b></td><td>" + b.days + '</td><td>' + b.goal + "</td><td>" +
+    b.children.map(c => c.t).join(" / ") + '</td><td><span class="pill">' + b.gate + "</span> " + b.pass + "</td></tr>"
+  ).join("");
+
+  const KPI = [
+    ["点击率 CTR", "点击量 ÷ 曝光量", "≥ 行业 1.2 倍", "< 行业 0.7 倍", "主图/价格/人群共同决定；低于 1% 基本是图的问题"],
+    ["收藏加购率", "(收藏数 + 加购数) ÷ UV", "≥ 10%（非标 15%）", "< 5%", "反映“想买但没立刻买”，是转化前置指标"],
+    ["转化率 CVR", "支付买家数 ÷ UV", "≥ 行业均值", "< 行业 0.6 倍", "详情页、评价、价格、客服共同决定"],
+    ["UV 价值", "支付金额 ÷ UV", "≥ 行业 1.2 倍", "< 行业 0.8 倍", "平台给流量的核心依据"],
+    ["坑产", "月支付金额（子类目排名依据）", "进可视频道门槛", "—", "淘宝排名的底层逻辑之一"],
+    ["ROI / 投产比", "支付金额 ÷ 广告花费", "≥ 保本 × 1.2", "< 保本 × 0.7", "保本 ROI = 1 ÷ 毛利率"],
+    ["CPC", "广告花费 ÷ 点击量", "≤ 保本 CPC", "> 保本 CPC 1.5 倍", "保本 CPC = 客单价 × 毛利率 × CVR"],
+    ["广告占比", "广告花费 ÷ GMV", "≤ 20%", "> 35%", "超过毛利率的一半就该警惕"],
+    ["退款率", "退款成功订单 ÷ 支付订单", "≤ 类目均值", "> 类目均值 1.5 倍", "影响体验分与搜索权重"],
+    ["DSR", "描述 / 服务 / 物流 三项评分", "≥ 4.8", "< 4.6", "低于同行均值会被限流"],
+    ["体验分（店铺综合）", "商品/物流/咨询/售后/纠纷 五项加权（类目内排名 5 档制）", "五项均 ≥ 同行均值", "任一项低于同行均值", "不是百分制 → 没有统一及格线"],
+    ["质量分（商品信息）", "主图 / 标题 / 属性 / 详情 的信息质量", "≥ 85（更多曝光）", "< 40（可降曝/下架）", "中度牛皮癣=主图文字 >100 字；重度=遮挡主体"],
+    ["24h 揽收率", "24 小时内揽收订单 ÷ 发货订单", "≥ 95%", "< 85%", "直接影响物流体验分"],
+    ["客单价 AOV", "支付金额 ÷ 支付订单数", "≥ 类目均值", "—", "提客单比拉新更省钱"],
+    ["复购率", "复购买家数 ÷ 总买家数", "≥ 15%", "< 8%", "长期利润的来源"]
+  ];
+  document.querySelector("#kpiTable tbody").innerHTML = KPI.map(r =>
+    "<tr><td><b>" + r[0] + "</b></td><td>" + r[1] + '</td><td><span class="pill green">' + r[2] + '</span></td><td><span class="pill red">' + r[3] + "</span></td><td>" + r[4] + "</td></tr>"
+  ).join("");
+})();
+
+/* =========================================================
+   六阶段详解（怎么做 + 指标）
+   ========================================================= */
+const STAGES = [
+  {
+    name: "0 选品·定价", days: "D-15 ~ D-1", gate: "G0", hex: "#6366f1",
+    goal: "先算清能不能赚钱，再决定做不做",
+    steps: [
+      "<b>拉大盘：</b>生意参谋 → 市场洞察 → 选 3 个候选叶子类目，导出近 12 个月搜索人气、交易指数、在线商品数。",
+      "<b>算供需：</b>在线商品数 ÷ 搜索人气。> 3:1 直接淘汰（僧多粥少）；> 6:1 是血海，别碰。",
+      "<b>抓竞品：</b>按销量排 TOP20，逐个记录到手价 / 月销 / 评价数 / 主图形式 / 是否天猫 / 是否品牌。",
+      "<b>算坑产：</b>坑产 = 月销量 × 客单价，摸清进榜需要多少月销额；标出「可打层」（月销 300~2000、评价 &lt;1000 的非品牌链接）。",
+      "<b>找价带：</b>统计 TOP100 价格分布（39/59/79/99 区间），找「商品数少但销量不低」的断层带。",
+      "<b>算利润（最关键）：</b>到手价 − 采购 − 包装 − 快递 − 平台佣金 − 支付手续费 − 运费险 − 退货损耗 = 毛利额；<b>保本 ROI = 1 ÷ 毛利率</b>。",
+      "<b>验卖点：</b>写下「1 主卖点 + 2 支撑点」，每个都能拍成图或视频，否则重写。",
+      "<b>合规扫：</b>类目资质（3C/食品/化妆品/质检）、商标授权、极限词（最/第一/国家级/100%）、外观专利。",
+      "<b>立项评审：</b>市场 / 竞争 / 利润 / 合规 四项打分，全绿才开干；任一红 → 换细分，不硬上。"
+    ],
+    metrics: [
+      ["月搜索人气", "≥ 5 万", "< 1 万", "生意参谋-市场洞察"],
+      ["供需比（商品数÷人气）", "≤ 3 : 1", "> 6 : 1", "在线商品数 ÷ 搜索人气"],
+      ["可打层对手数", "≥ 5 家", "0~1 家", "TOP100 人工统计"],
+      ["头部集中度 CR5", "< 60%", "> 80%", "TOP20 月销额占比"],
+      ["毛利率（标品 / 非标）", "≥35% / ≥45%", "< 25%", "自算，含退货损耗"],
+      ["保本 ROI", "≤ 3.0", "> 4.0", "1 ÷ 毛利率"],
+      ["合规缺失项", "0 项", "≥ 1 项", "资质 / 商标 / 极限词清单"]
+    ],
+    out: ["选品立项表（四项打分）", "保本 ROI 数字（写进投放目标）", "竞品档案 TOP20", "一句话卖点 + 证据表"],
+    pass: "四项全绿：市场够大 && 竞争可打 && 毛利 ≥ 35% && 合规 0 缺失",
+    fix: "任一项红 → 换细分 / 换价带 / 换品。选错品，后面全是白忙。"
+  },
+  {
+    name: "1 上架·内功", days: "D1 ~ D3", gate: "G1", hex: "#0ea5e9",
+    goal: "把「点击前」和「点击后」两件事做到行业上游",
+    steps: [
+      "<b>定类目填属性：</b>选最精准叶子类目（错放=流量全错），属性填满率 100%，核心属性与实物一致。",
+      "<b>写标题：</b>1 核心词（前 6 字）+ 3 属性词 + 2 场景词 + 长尾，≤ 30 字；每个词都要在搜索词榜查到有量。",
+      "<b>拍 6 张主图：</b>①白底/场景首图 ②核心卖点 ③使用场景 ④材质细节 ⑤尺寸对比 ⑥信任背书；1:1、≥800px、禁牛皮癣。",
+      "<b>主图视频：</b>9~30 秒，前 3 秒给钩子（痛点 / 效果对比），全程字幕，音乐用平台曲库。",
+      "<b>做详情页：</b>痛点 → 方案 → 证据 → 参数 → 场景 → 信任 → 售后；首屏 3 秒讲清「是什么、解决什么」，手机端字号 ≥ 28px。",
+      "<b>搭 SKU 与价格：</b>引流款 / 主推款 / 利润款三档，库存 ≥ 15 天预估销量；券 / 满减 / 首单礼金配好，<b>用券调价，不动一口价</b>。",
+      "<b>配服务：</b>7 天无理由、运费险、24h 发货、极速退款、客服快捷话术与自动回复。",
+      "<b>AB 测图：</b>上架后 3 天，两版首图各 ≥ 1000 曝光，胜出版 CTR 高出 ≥ 20% 才换。"
+    ],
+    metrics: [
+      ["属性完整度", "100%", "< 95%", "千牛发布页"],
+      ["首图点击率", "≥ 行业 × 1.2", "< 行业 × 0.7", "生意参谋-商品 360"],
+      ["详情页跳出率", "< 70%", "> 85%", "生意参谋-流量"],
+      ["页面停留时长", "≥ 25 秒", "< 10 秒", "生意参谋-流量"],
+      ["主图数量 / 视频", "6 张 / 有", "≤ 4 张 / 无", "商品详情自检"],
+      ["券后毛利率", "≥ 0（不亏本起量）", "< 0", "到手价 − 成本"],
+      ["可售库存天数", "≥ 15 天", "< 7 天", "库存 ÷ 日均销"]
+    ],
+    out: ["上架完成清单", "测图结论（哪版胜出）", "到手价与优惠结构表", "客服话术 + 售后流程"],
+    pass: "内功清单 100% && 测图 CTR 达标 && 详情跳出 < 70%",
+    fix: "CTR 不达标 → 先改图，不许加预算；跳出高 → 重做首屏；券后亏 → 重设优惠结构。"
+  },
+  {
+    name: "2 冷启动", days: "D1 ~ D14", gate: "G2", hex: "#f59e0b",
+    goal: "破零、打标签、拿满新品扶持流量",
+    steps: [
+      "<b>D1 复核：</b>上架后从头走一遍移动端（主图顺序 / 规格 / 优惠 / 客服自动回复），补店铺内链。",
+      "<b>D2 破零：</b>老客 / 私域 / 客服一对一推首单 3~5 单，<b>严禁刷单</b>；同时开关键词推广（20~30 长尾精准词，日预算 50~100）。",
+      "<b>D3-D4 看词：</b>有点击无成交的词降价，无展现的词加价；开智能推广托底（日预算 50，只补量不抢词）。",
+      "<b>D5-D7 内容：</b>逛逛 / 短视频日更 1 条；找 5~10 个腰部达人寄样换真实测评。",
+      "<b>D8-D10 加预算：</b>只加在有成交的词上，日预算提到 100~150；把「收藏加购未买」单独建人群包。",
+      "<b>D11-D12 淘客：</b>开 10%~15% 佣金推 1 个 SKU，做基础销量，30 天后降佣退出。",
+      "<b>D13 稳履约：</b>查库存、24h 揽收率、客服响应；有差评立刻处理，别留到第 14 天。",
+      "<b>D14 验收：</b>对 G2 六项指标打分，决定是否进放量。"
+    ],
+    metrics: [
+      ["7 天破零单量", "≥ 10 单", "0 单", "生意参谋-交易"],
+      ["14 天累计单量", "≥ 30 单", "< 10 单", "生意参谋-交易"],
+      ["评价数（带图）", "≥ 15 条", "< 5 条", "商品评价管理"],
+      ["入池关键词数", "≥ 20 个", "< 5 个", "搜索词报告 / 生意参谋"],
+      ["广告 ROI（允许亏）", "≥ 保本 × 0.6", "< 保本 × 0.4", "阿里妈妈报表"],
+      ["CTR / CVR", "≥ 行业 1.1 倍 / 0.8 倍", "< 0.7 倍 / 0.5 倍", "商品 360"],
+      ["退款率", "≤ 类目均值", "> 类目 1.5 倍", "售后管理"]
+    ],
+    out: ["有效词表 + 否词表", "内容素材库（≥7 条）", "日报数据基线", "首批真实评价"],
+    pass: "14 天 ≥30 单 + 评价 ≥15 + 入池词 ≥20 + CTR/CVR 达标 + 退款率正常",
+    fix: "单量不足→查流量入口；CTR 低→换首图；CVR 低→改详情 / 调价 / 补评价；退款高→查描述与实物一致性。"
+  },
+  {
+    name: "3 放量", days: "D15 ~ D45", gate: "G3", hex: "#ef4444",
+    goal: "从「能卖」到「卖得多」，把搜索位和推荐位都占住",
+    steps: [
+      "<b>锁核心词：</b>按「搜索量 × 转化率」筛 5~10 个主词，出价 = 行业均价 × 1.1，目标前 3 页。",
+      "<b>分时折扣：</b>0~8 点降到 30%，20~23 点加到 120%；高转化时段才加价。",
+      "<b>人群三层：</b>相似店铺 / 类目行为 / 达摩盘自定义；拉新层看新客成本，收割层（收藏加购未买）看 ROI。",
+      "<b>开全站推广：</b>日销稳定 ≥7 天且 ROI ≥ 保本后才开，目标 ROI = 保本 × 1.2，先观察 7 天。",
+      "<b>内容放大：</b>短视频日更 + 固定时段直播 + 10 个腰部达人矩阵（比 1 个头部便宜且稳）。",
+      "<b>活动补量：</b>天天特卖 / 聚划算 / 店铺满减；<b>报名前先算清活动价利润</b>，亏超毛利 50% 就不报。",
+      "<b>7 天坑产冲刺：</b>真实让利 + 三线同推，冲完立刻回归正常价，观察 14 天留存是否 ≥70%。",
+      "<b>周复盘：</b>量 / 价 / 费 / 评 四象限，每周出 3 条可执行结论。"
+    ],
+    metrics: [
+      ["日销周环比", "+20%", "< 0（连续 2 周）", "日报"],
+      ["搜索流量占比", "≥ 30%", "< 15%", "生意参谋-流量"],
+      ["核心词首页数", "≥ 5 个", "< 2 个", "关键词排名查询"],
+      ["广告 ROI", "≥ 保本", "< 保本 × 0.8", "阿里妈妈报表"],
+      ["广告费占 GMV", "≤ 30%", "> 40%", "花费 ÷ GMV"],
+      ["新客成本", "≤ 首单毛利", "> 首单毛利 × 1.5", "人群推广报表"],
+      ["内容 UV 占比", "≥ 15%", "< 5%", "生意参谋-流量来源"]
+    ],
+    out: ["核心词 + 出价表", "人群包结构（拉新 / 收割）", "活动报名日历", "冲榜复盘（留存率）"],
+    pass: "日销环比 +20% && 搜索占比 ≥30% && ROI ≥ 保本 && 广告占比 ≤30%",
+    fix: "词进不了首页→提权重或换词；ROI 低→降 CPC / 收人群；冲榜后掉回原点→说明靠价格不靠权重，重做内功。"
+  },
+  {
+    name: "4 盈利", days: "D45 ~ D90", gate: "G4", hex: "#10b981",
+    goal: "从「卖得多」到「赚得到」",
+    steps: [
+      "<b>词层降本：</b>砍掉 7 天 0 成交 & CTR &lt;1% 的词；核心词降价 10%~20%，观察 3 天排名再回调。",
+      "<b>人群收缩：</b>只留 ROI 前 30% 的人群包，关掉持续低效的计划。",
+      "<b>提客单：</b>套装 / 组合装、满减门槛设客单价 ×1.3、详情加「搭配购」，目标 AOV +15%。",
+      "<b>提复购：</b>确认收货后 7 天发复购券、淘宝群固定上新、包裹卡引导加群。",
+      "<b>扩品裂变：</b>同款新色 / 新规格，复用老链接的词包和人群，新链接 30 天内破零。",
+      "<b>提自然占比：</b>核心词稳前 3 页 + 内容稳定输出，付费只「点火」不「供氧」。",
+      "<b>财务月报：</b>GMV − 成本 − 广告 − 退货 − 平台费 = 净利；同步看库存周转与滞销 SKU。"
+    ],
+    metrics: [
+      ["ROI（连续 14 天）", "≥ 保本 × 1.2", "< 保本", "阿里妈妈 + 日报"],
+      ["广告费占 GMV", "≤ 20%", "> 30%", "花费 ÷ GMV"],
+      ["自然流量占比", "≥ 50%", "< 35%", "生意参谋-流量"],
+      ["客单价 AOV", "环比 +15%", "环比下降", "交易分析"],
+      ["复购率", "≥ 15%", "< 8%", "客户运营平台"],
+      ["净利率", "≥ 10%", "< 5%", "月度利润表"],
+      ["库存周转", "≤ 45 天", "> 90 天", "库存 ÷ 日均销"]
+    ],
+    out: ["降本清单（词 / 人群 / 时段）", "客单结构方案", "复购体系", "月度利润表"],
+    pass: "连续 14 天 ROI ≥ 保本×1.2 && 广告占比 ≤20% && 净利为正",
+    fix: "净利 <5% → 提价或降本二选一；连续 2 个月净亏 → 收缩预算或果断退出。"
+  },
+  {
+    name: "5 维护", days: "D90 起", gate: "G5", hex: "#8b5cf6",
+    goal: "守住权重、守住评分、守住利润",
+    steps: [
+      "<b>每日 20 分钟：</b>GMV / UV / 转化 / 花费 / ROI，中差评回复，库存与发货异常，在投计划有无掉量。",
+      "<b>每周 60 分钟：</b>竞品 TOP10 扫描（价格 / 主图 / 活动）、词表增减、DSR 三项、退款原因 Top3。",
+      "<b>每月：</b>主图迭代 1 次（CTR 会衰减）、详情优化、价格带复核、利润复盘。",
+      "<b>库存：</b>安全库存 = 日均销 × 补货周期 × 1.5，大促前 30 天锁产能。",
+      "<b>风控：</b>极限词月扫、图片版权留档、禁虚假交易、类目属性不许错放。",
+      "<b>大促：</b>提前 30 天备货、提前 15 天报名，活动价与日常价做区隔。",
+      "<b>季度：</b>单品生命周期判断（加投 / 维稳 / 清仓），每季上新 1~2 款保持店铺活跃。"
+    ],
+    metrics: [
+      ["DSR（描述/服务/物流）", "≥ 4.8", "< 4.6", "评价管理"],
+      ["体验分（三项）", "≥ 4.6", "< 4.3", "生意参谋-服务"],
+      ["月销波动", "< 20%", "> 40%", "月度对比"],
+      ["断货次数", "0 次", "≥ 1 次", "库存预警"],
+      ["好评率", "≥ 98%", "< 95%", "评价管理"],
+      ["违规扣分", "0", "≥ 1", "千牛-体检中心"],
+      ["主图迭代周期", "≤ 30 天", "> 90 天", "迭代记录"]
+    ],
+    out: ["维护日历", "竞品档案（每周更新）", "迭代记录", "大促作战表"],
+    pass: "月销波动 <20% && DSR ≥4.8 && 复购 ≥15% && 0 违规",
+    fix: "DSR 掉 → 2 周专项整改（物流 / 客服）；断货 → 抬安全库存；CTR 衰减 → 换主图。"
+  }
+];
+
+(function renderStages() {
+  const box = document.getElementById("stageDetail");
+  if (!box) return;
+  box.innerHTML = STAGES.map(s => {
+    const steps = s.steps.map(x => "<li>" + x + "</li>").join("");
+    const mrows = s.metrics.map(m =>
+      "<tr><td>" + m[0] + '</td><td class="v">' + m[1] + "</td><td>" + m[2] + "</td><td>" + m[3] + "</td></tr>"
+    ).join("");
+    return '<div class="stage">' +
+      '<div class="stage-h" style="background:' + s.hex + '">' +
+        '<span class="n">' + s.name + '</span>' +
+        '<span class="t">' + s.days + " · " + s.goal + "</span>" +
+        '<span class="g">' + s.gate + "</span>" +
+      "</div>" +
+      '<div class="stage-b">' +
+        '<div class="stage-col"><h5>怎么做（按顺序执行）</h5><ol class="steps">' + steps + "</ol>" +
+          '<h5 style="margin-top:14px">阶段产出物</h5><div style="font-size:12.5px">' + s.out.map(x => "▢ " + x).join("<br>") + "</div>" +
+        "</div>" +
+        '<div class="stage-col"><h5>指标（目标值 / 红线 / 在哪看）</h5>' +
+          '<table class="mtab"><thead><tr><th>指标</th><th>目标</th><th>红线</th><th>数据来源</th></tr></thead><tbody>' + mrows + "</tbody></table>" +
+        "</div>" +
+      "</div>" +
+      '<div class="stage-f">' +
+        "<div><b>✅ 过关线：" + s.pass + "</b></div>" +
+        "<div><b>🛠 不过关怎么办：</b>" + s.fix + "</div>" +
+      "</div>" +
+    "</div>";
+  }).join("");
+})();
+
+/* 初始化 */
+render();
+resetDrawer();
+requestAnimationFrame(() => fit());
+window.addEventListener("resize", () => fit());
+</script>
+</body>
+</html>
